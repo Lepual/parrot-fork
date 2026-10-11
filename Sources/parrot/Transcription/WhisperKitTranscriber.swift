@@ -20,7 +20,25 @@ actor WhisperKitTranscriber: Transcriber {
             throw TranscriberError.missingEngineID
         }
         FileHandle.standardError.write(Data("loading \(model.id)...\n".utf8))
-        let config = WhisperKitConfig(model: whisperKitID, verbose: false, prewarm: true, load: true)
+
+        // WhisperKit defaults to `download: true`, which always checks the Hub
+        // API first — even when the model is already on disk — and throws if
+        // there's no network. Point it straight at the local copy when we
+        // already have one so parrot can run fully offline.
+        let config: WhisperKitConfig
+        if model.isDownloaded, let localFolder = model.localFolder {
+            config = WhisperKitConfig(
+                model: whisperKitID,
+                modelFolder: localFolder.path,
+                verbose: false,
+                prewarm: true,
+                load: true,
+                download: false
+            )
+        } else {
+            config = WhisperKitConfig(model: whisperKitID, verbose: false, prewarm: true, load: true)
+        }
+
         pipeline = try await WhisperKit(config)
         FileHandle.standardError.write(Data("✓ \(model.id) ready\n".utf8))
     }

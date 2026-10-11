@@ -16,12 +16,18 @@ struct Check {
 }
 
 enum DoctorReport {
-    static func run() -> [Check] {
-        [
-            checkMicrophone(),
-            checkAccessibility(),
-            checkFnKeyMapping(),
-        ]
+    static func run(hotkey: Hotkey = .default) -> [Check] {
+        var checks = [checkMicrophone(), checkAccessibility()]
+        switch hotkey {
+        case .fn:
+            // Only meaningful for Fn: macOS has a system-level "press 🌐 key
+            // to..." setting that can steal the key before parrot ever sees it.
+            checks.append(checkFnKeyMapping())
+        default:
+            // Other keys aren't subject to that system override.
+            checks.append(Check(name: "hotkey (\(hotkey.label))", status: .ok, remediation: nil))
+        }
+        return checks
     }
 
     static func checkMicrophone() -> Check {

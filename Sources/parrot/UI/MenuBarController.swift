@@ -9,15 +9,19 @@ final class MenuBarController {
     private let modelLabel: NSMenuItem
     private let stateLabel: NSMenuItem
     private let modelID: String
+    private let idleLabel: String
+    private let onPreferences: () -> Void
 
-    init(modelID: String) {
+    init(modelID: String, hotkeyLabel: String, onPreferences: @escaping () -> Void) {
         self.modelID = modelID
+        self.idleLabel = "idle · \(hotkeyLabel) (hold, or double-tap to toggle)"
+        self.onPreferences = onPreferences
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        stateLabel = NSMenuItem(title: "idle · hold fn to dictate", action: nil, keyEquivalent: "")
+        stateLabel = NSMenuItem(title: idleLabel, action: nil, keyEquivalent: "")
         stateLabel.isEnabled = false
         menu.addItem(stateLabel)
 
@@ -26,6 +30,14 @@ final class MenuBarController {
         menu.addItem(modelLabel)
 
         menu.addItem(.separator())
+
+        let preferences = NSMenuItem(
+            title: "Preferenze…",
+            action: #selector(preferencesClicked),
+            keyEquivalent: ","
+        )
+        preferences.target = self
+        menu.addItem(preferences)
 
         let quit = NSMenuItem(
             title: "Quit parrot",
@@ -40,7 +52,7 @@ final class MenuBarController {
     }
 
     func setRecording(_ recording: Bool) {
-        stateLabel.title = recording ? "● recording" : "idle · hold fn to dictate"
+        stateLabel.title = recording ? "● recording" : idleLabel
     }
 
     func setTranscribing() {
@@ -76,6 +88,10 @@ final class MenuBarController {
         // Menu-bar status icons are nominally 18pt tall; size the SVG to match.
         image.size = NSSize(width: 16, height: 16)
         return image
+    }
+
+    @objc private func preferencesClicked() {
+        onPreferences()
     }
 
     @objc private func quitClicked() {
